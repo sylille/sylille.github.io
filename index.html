@@ -349,8 +349,25 @@ input,select,textarea{font:inherit;color:inherit}
 .logbox{width:100%;height:120px;font-family:var(--mono);font-size:11px;border:1px solid var(--line-2);border-radius:8px;background:var(--nav);padding:8px}
 .clk{font-family:var(--mono);font-size:12.5px}
 
-.adminbtn{position:fixed;right:calc(16px + env(safe-area-inset-right,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:40;background:var(--ink);color:#fff;border-radius:999px;padding:7px 14px;font-size:12px;font-weight:600;letter-spacing:.02em;opacity:.55;box-shadow:var(--shadow)}
+.adminbtn{position:fixed;right:calc(16px + env(safe-area-inset-right,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:58;background:var(--ink);color:#fff;border-radius:999px;padding:7px 14px;font-size:12px;font-weight:600;letter-spacing:.02em;opacity:.55;box-shadow:var(--shadow)}
 .adminbtn:hover,.adminbtn:focus-visible{opacity:1}
+.hold{position:fixed;inset:0;z-index:55;background:var(--bg);display:grid;place-items:center;padding:24px}
+.hold .card{max-width:440px;width:100%;align-items:center;text-align:center;gap:10px;padding:40px 32px;box-shadow:var(--shadow)}
+.hold .dot{width:10px;height:10px;border-radius:50%;background:var(--teal);animation:bl 1.6s infinite}
+.hold h2{font-size:22px}
+.hold p{margin:0;color:var(--ink-2)}
+.holdbtn[aria-pressed="true"]{background:var(--teal);border-color:var(--teal);color:#fff}
+.sync{display:flex;flex-direction:column;gap:2px}
+.srow{display:grid;grid-template-columns:62px minmax(0,1fr) auto;gap:10px;align-items:center;padding:6px 2px;font-size:13px;border-bottom:1px solid var(--line)}
+.srow:last-child{border-bottom:0}
+.srow .tm{font-family:var(--mono);font-size:11.5px;color:var(--ink-3)}
+.st{border-radius:999px;padding:2px 10px;font-size:12px;font-weight:500;white-space:nowrap}
+.st.ok{background:var(--teal-soft);color:var(--teal-ink)}
+.st.wait{background:#FEF3C7;color:#92400E}
+.st.bad{background:#FFE4E6;color:#9F1239}
+.ssum{display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:500}
+.ssum i{width:8px;height:8px;border-radius:50%;background:var(--ok)}
+.ssum.wait i{background:#D97706}.ssum.bad i{background:var(--mark)}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(24px + env(safe-area-inset-bottom,0px));background:var(--ink);color:#fff;padding:9px 16px;border-radius:999px;font-size:13px;z-index:60;box-shadow:var(--shadow);max-width:calc(100% - 32px)}
 
 /* responsive */
@@ -478,6 +495,8 @@ const L = {
   openMyUse:['Open My use','내 이용 열기'], msgLounge:['Message the lounge…','라운지에 메시지 보내기…'],
   fanLounge:['Fan lounge','팬 라운지'], roomDesc:['A community room for people who chat with {n}.','{n}와 대화하는 사람들이 모이는 커뮤니티 방이에요.'],
   rules:['Room guidelines','방 이용 규칙'], peers:['Peer supporters','피어 서포터'], online:['3 online','3명 접속 중'], yourFlags:['Your flags','내가 남긴 표시'], anon:['Anonymous','익명'],
+  holdT:['Please wait','잠시만 기다려 주세요'],
+  holdB:['The researcher will let you know when to start.','연구자가 시작을 안내해 드릴 때까지 기다려 주세요.'],
   pTitle:['Persona cards','페르소나 카드'],
   pSub:['Read the front and describe this person in your own words. Then turn the card to see the zone profile.','앞면을 읽고 이 사람을 내 말로 설명해 주세요. 그다음 카드를 뒤집어 Zone 프로필을 확인해요.'],
   turn:['Show zone profile','Zone 프로필 보기'], turnBack:['Show front','앞면 보기'],
@@ -659,7 +678,7 @@ function freshSession(keep){
   return {
     pid: keep.pid || 'P01', part: keep.part || 'B', persona: keep.persona || 'P2', lang: keep.lang || 'en',
     preset: keep.preset || 'baseline', s: keep.s ? {...keep.s} : {...ALLOFF},
-    record: keep.record ?? true, showTime: keep.showTime ?? false, showSpecs: keep.showSpecs ?? false,
+    record: keep.record ?? true, hold: keep.hold ?? false, showTime: keep.showTime ?? false, showSpecs: keep.showSpecs ?? false,
     log: keep.log || [], started: Date.now(),
     view:'participant', route:'chat', char:'aria',
     onboardDone:false, motives:[],
@@ -739,8 +758,10 @@ function render(){
   if(S.view==='admin') root.innerHTML = renderAdmin();
   else if(S.part==='A' || S.route==='personas') root.innerHTML = renderPersonas();
   else root.innerHTML = renderApp();
-  document.getElementById('overlay').innerHTML = (S.view!=='admin' && !SYNC.on ? `<button class="adminbtn" data-act="toAdmin">Admin</button>` : '') + (UI.toast ? `<div class="toast" role="status">${esc(UI.toast)}</div>` : '');
-  if(aid){ const el = document.getElementById(aid); if(el){ el.focus(); if(sel && el.setSelectionRange){ try{ el.setSelectionRange(sel[0],sel[1]); }catch(e){} } } }
+  document.getElementById('overlay').innerHTML = (S.view!=='admin' && !SYNC.on ? `<button class="adminbtn" data-act="toAdmin">Admin</button>` : '') + (S.hold && S.view!=='admin' ? `<div class="hold" role="alertdialog" aria-modal="true" aria-labelledby="holdt"><div class="card"><span class="dot" aria-hidden="true"></span><h2 id="holdt">${t('holdT')}</h2><p>${t('holdB')}</p></div></div>` : '')
+    + (UI.toast ? `<div class="toast" role="status">${esc(UI.toast)}</div>` : '');
+  if(S.hold && S.view!=='admin' && document.activeElement && document.activeElement !== document.body) document.activeElement.blur();
+  if(aid && !(S.hold && S.view!=='admin')){ const el = document.getElementById(aid); if(el){ el.focus(); if(sel && el.setSelectionRange){ try{ el.setSelectionRange(sel[0],sel[1]); }catch(e){} } } }
   const same = prevView === UI.lastView;
   Object.keys(keep).forEach(q=>{ const el = root.querySelector(q); if(!el) return;
     if(q==='.scroll') el.scrollTop = (!same || keep[q].atBottom) ? el.scrollHeight : keep[q].top;
@@ -1040,6 +1061,7 @@ function renderAdmin(){
   return `<div class="admin">
     <header class="ahead"><b>Prototype</b><span class="badge">Study admin · researcher only</span><span class="sp"></span>
       <span class="logon ${S.record?'':'off'}"><i></i><span>${S.record?'Logging on':'Logging paused'} · session <span id="timer">${elapsed()}</span></span></span>
+      <button class="pill sm holdbtn" data-act="hold" aria-pressed="${!!S.hold}">${S.hold?'Release “Please wait”':'Show “Please wait”'}</button>
       ${RA ? `${remoteStatus()}<button class="pill sm" data-act="copyLink">Copy participant link</button>` : `<button class="pill dark" data-act="toParticipant">Back to participant view</button>`}</header>
     <div class="agrid">
       <div class="acol">
@@ -1070,6 +1092,7 @@ function renderAdmin(){
         </section>
       </div>
       <div class="acol">
+        ${RA ? renderSyncCard() : ''}
         <section class="acard"><div class="arow"><h2>Usage log</h2><span style="display:inline-flex;gap:10px;align-items:center;font-size:13.5px">Record ${sw(S.record,'record',null,'Record')}</span></div>
           <p class="d">Stores event metadata only. Message text is not stored.</p>
           <div class="logwrap"><table class="logt"><thead><tr><th>Time</th><th>Event</th><th>Detail</th></tr></thead><tbody>${rows || '<tr><td colspan="3" class="muted">No events yet.</td></tr>'}</tbody></table></div>
@@ -1226,7 +1249,7 @@ const ACT = {
     S.char = 'aria'; ensureGreeting(); S.route = 'chat'; save(); render();
   },
   reset(){
-    const keep = {pid:S.pid, part:S.part, persona:S.persona, lang:S.lang, preset:S.preset, s:S.s, record:S.record, showTime:S.showTime, showSpecs:S.showSpecs, log:S.log};
+    const keep = {pid:S.pid, part:S.part, persona:S.persona, lang:S.lang, preset:S.preset, s:S.s, record:S.record, hold:S.hold, showTime:S.showTime, showSpecs:S.showSpecs, log:S.log};
     S = freshSession(keep); S.view = 'admin';
     log('session_start', `${S.pid} · persona ${S.persona} · ${condSummary()}`); save(); render();
   },
@@ -1242,6 +1265,7 @@ const ACT = {
   cancelClear(){ UI.confirmClear = false; render(); },
   clearLog(){ S.log = []; UI.confirmClear = false; UI.logText = null; save(); render(); },
   sel(el){ applySel(el.dataset.k, el.dataset.v); save(); render(); },
+  hold(){ S.hold = !S.hold; log('hold_screen', S.hold ? 'on' : 'off'); save(); render(); },
   async copyLink(){
     const link = participantLink();
     try{ await navigator.clipboard.writeText(link); toast('Participant link copied.'); }catch(e){ toast(link); }
@@ -1258,7 +1282,7 @@ function applySel(k, v){
    Admin tab sends commands. Participant tab runs them with the same ACT handlers,
    then sends back a state summary and new log events. Chat text is never sent.
    ========================================================= */
-const REMOTE_ACTS = new Set(['persona','preset','tog','record','specs','simToggle','t15','tday','tweek','fireBlock','fireNotice','fireModel','reset','clearLog','sel']);
+const REMOTE_ACTS = new Set(['persona','preset','tog','record','specs','simToggle','t15','tday','tweek','fireBlock','fireNotice','fireModel','reset','clearLog','sel','hold']);
 async function post(body){
   const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), 12000); // a stuck request must not block later ticks
   try{
@@ -1267,9 +1291,9 @@ async function post(body){
   }finally{ clearTimeout(timer); }
 }
 function snapshot(){
-  return {pid:S.pid, part:S.part, persona:S.persona, lang:S.lang, preset:S.preset, s:S.s, record:S.record,
+  return {pid:S.pid, part:S.part, persona:S.persona, lang:S.lang, preset:S.preset, s:S.s, record:S.record, hold:S.hold,
     showTime:S.showTime, showSpecs:S.showSpecs, started:S.started, sim:S.sim, plan:{saved:S.plan.saved, week:S.plan.week},
-    fired:S.fired, model:S.model, cutoff:S.cutoff, support:S.support, route:S.route, char:S.char, onboardDone:S.onboardDone, ack:SY.seq};
+    fired:S.fired, model:S.model, cutoff:S.cutoff, support:S.support, route:S.route, char:S.char, onboardDone:S.onboardDone, ack:SY.seq, base:SY.base||0};
 }
 
 /* participant side */
@@ -1297,7 +1321,7 @@ async function pTick(){
     const res = await post(body);
     if(res.error) throw new Error(res.error);
     SY.pushed = n; if(body.state) pLast = snap;
-    if(SY.seq < 0) SY.seq = res.seq;                       // first contact: skip older commands
+    if(SY.seq < 0){ SY.seq = res.seq; SY.base = res.seq; }  // first contact: skip older commands
     else for(const c of res.cmds){ if(c.seq > SY.seq){ applyCmd(c); SY.seq = c.seq; again = true; } }
     saveSY();
   }catch(e){ /* keep working offline; retry on the next tick */ }
@@ -1305,11 +1329,47 @@ async function pTick(){
 }
 
 /* admin side */
-const AD = {key:'', queue:[], clear:false, inflight:false, lastSent:0, log:[], state:null, online:false, ok:null, err:'', sig:''};
+const AD = {key:'', queue:[], clear:false, inflight:false, lastSent:0, log:[], state:null, online:false, ok:null, err:'', sig:'', hist:[], ack:-1, seenAgo:null};
 try{ AD.key = localStorage.getItem('study2-admin-key') || ''; }catch(e){}
-function remote(act, data){ AD.queue.push({act, data}); aTick(); }
+function remote(act, data){
+  const h = {act, data, label:'', t:Date.now(), seq:null, status:'queued', done:null};
+  AD.hist.push(h); if(AD.hist.length > 30) AD.hist.shift();
+  AD.queue.push({act, data, h}); aTick();
+}
+function describe(act, d){
+  const on = v => v ? 'on' : 'off';
+  switch(act){
+    case 'tog': return `${d.k} ${on(S.s[d.k])}`;
+    case 'persona': return `Persona ${d.p}`;
+    case 'preset': return `Preset · ${d.v}`;
+    case 'sel': return ({pid:'Participant', part:'Session part', lang:'Language'}[d.k]||d.k) + ` · ${d.v}`;
+    case 'record': return `Logging ${on(S.record)}`;
+    case 'specs': return `Spec labels ${on(S.showSpecs)}`;
+    case 'simToggle': return `Time bar ${on(S.showTime)}`;
+    case 'hold': return `“Please wait” ${on(S.hold)}`;
+    case 't15': return '+15 min of use'; case 'tday': return 'Next day'; case 'tweek': return 'Next week';
+    case 'fireBlock': return 'Access block'; case 'fireNotice': return 'Advance notice'; case 'fireModel': return 'Model change v2.3 → v2.4';
+    case 'reset': return 'Reset session'; case 'clearLog': return 'Clear log';
+    default: return act;
+  }
+}
+function renderSyncCard(){
+  const now = Date.now(), pend = AD.hist.filter(h => h.status==='queued' || h.status==='sent').length;
+  const sum = AD.ok===false ? ['bad','Server unreachable. Edits will be sent when it is back.']
+    : !AD.state ? ['wait','Waiting for the participant page to connect.']
+    : !AD.online ? ['bad', `Participant page offline${AD.seenAgo!=null?` · last seen ${AD.seenAgo} s ago`:''}. Edits will apply when it reconnects.`]
+    : pend ? ['wait', `${pend} edit${pend>1?'s':''} waiting for the participant page.`]
+    : ['ok', 'All edits applied on the participant page.'];
+  const chip = h => h.status==='missed' ? `<span class="st bad">Missed · page opened later</span>` : h.status==='applied' ? `<span class="st ok">Applied · ${((h.done-h.t)/1000).toFixed(1)} s</span>`
+    : h.status==='queued' ? `<span class="st ${AD.ok===false?'bad':'wait'}">${AD.ok===false?'Not sent':'Sending'}</span>`
+    : `<span class="st ${AD.online?'wait':'bad'}">Sent · waiting ${Math.round((now-h.t)/1000)} s</span>`;
+  const rows = AD.hist.slice(-8).reverse().map(h => `<div class="srow"><span class="tm">${hms(h.t)}</span><span>${esc(h.label)}</span>${chip(h)}</div>`).join('');
+  return `<section class="acard"><h2>Sync status</h2><p class="d">Shows whether each edit made here has reached the participant page.</p>
+    <div class="ssum ${sum[0]==='ok'?'':sum[0]}"><i></i><span>${sum[1]}</span></div>
+    <div class="sync">${rows || '<span class="muted">No edits sent yet.</span>'}</div></section>`;
+}
 function adopt(st){
-  ['pid','part','persona','lang','preset','s','record','showTime','showSpecs','started','sim','fired','model','cutoff','support','route','char','onboardDone']
+  ['pid','part','persona','lang','preset','s','record','hold','showTime','showSpecs','started','sim','fired','model','cutoff','support','route','char','onboardDone']
     .forEach(k => { if(st[k] !== undefined) S[k] = st[k]; });
   S.plan = {...S.plan, ...st.plan}; S.view = 'admin';
 }
@@ -1317,14 +1377,20 @@ async function aTick(){
   if(AD.inflight || !AD.key) return; AD.inflight = true;
   const cmds = AD.queue.splice(0), clear = AD.clear; AD.clear = false;
   try{
-    const res = await post({op:'a', room:SYNC.room, key:AD.key, cmds, clearLog:clear, logFrom:AD.log.length});
+    const res = await post({op:'a', room:SYNC.room, key:AD.key, cmds:cmds.map(c => ({act:c.act, data:c.data})), clearLog:clear, logFrom:AD.log.length});
     if(res.error==='key'){ AD.key = ''; AD.err = 'The key did not match.'; try{ localStorage.removeItem('study2-admin-key'); }catch(e){} render(); return; }
     if(res.error) throw new Error(res.error);
     AD.ok = true; AD.err = '';
-    if(cmds.length) AD.lastSent = res.seq;
+    if(cmds.length){ AD.lastSent = res.seq; cmds.forEach((c,i) => { if(c.h){ c.h.seq = res.seq - cmds.length + i + 1; c.h.status = 'sent'; } }); }
     if(res.logFrom < AD.log.length) AD.log = AD.log.slice(0, res.logFrom);
     res.logs.forEach(r => AD.log.push({ts:Number(r[1]), event:r[3], detail:r[4], pid:r[5], persona:r[6], lang:r[7], sim:r[8]}));
     AD.online = !!res.seen && (res.now - res.seen) < 8000;
+    AD.seenAgo = res.seen ? Math.round((res.now - res.seen)/1000) : null;
+    if(res.state && typeof res.state.ack === 'number'){
+      AD.ack = res.state.ack;
+      const base = res.state.base || 0;
+      AD.hist.forEach(h => { if(h.status==='sent' && h.seq <= AD.ack){ if(h.seq <= base) h.status = 'missed'; else { h.status = 'applied'; h.done = Date.now(); } } });
+    }
     AD.state = res.state;
     if(res.state && !AD.queue.length && res.state.ack >= AD.lastSent) adopt(res.state);
     S.log = AD.log;
@@ -1332,7 +1398,7 @@ async function aTick(){
     AD.ok = false; AD.queue.unshift(...cmds); if(clear) AD.clear = true;
   }finally{
     AD.inflight = false;
-    const sig = JSON.stringify([AD.ok, AD.online, AD.state, AD.log.length, AD.err]);
+    const sig = JSON.stringify([AD.ok, AD.online, AD.state, AD.log.length, AD.err, AD.hist.map(h=>h.status), AD.hist.some(h=>h.status==='sent') ? Math.floor(Date.now()/5000) : 0]);
     const busy = /SELECT|INPUT|TEXTAREA/.test(document.activeElement?.tagName||'');
     if(sig !== AD.sig && !busy){ AD.sig = sig; render(); }
     if(AD.queue.length) setTimeout(aTick, 0);
@@ -1348,6 +1414,7 @@ document.addEventListener('click', e => {
     const data = {...el.dataset}; delete data.act;
     if(act==='clearLog'){ AD.clear = true; AD.log = []; }
     remote(act, data); fn(el); // send to the participant tab, and show the change here at once
+    AD.hist[AD.hist.length-1].label = describe(act, data); render();
     return;
   }
   if(fn){ e.preventDefault(); fn(el); }
@@ -1357,6 +1424,7 @@ document.addEventListener('change', e => {
   const k = el.dataset.sel;
   if(RA) remote('sel', {k, v:el.value});
   applySel(k, el.value);
+  if(RA) AD.hist[AD.hist.length-1].label = describe('sel', {k, v:el.value});
   save(); render();
 });
 document.addEventListener('input', e => {
@@ -1371,6 +1439,7 @@ document.addEventListener('submit', e => {
   e.preventDefault();
   const f = e.target.dataset.form;
   if(f==='key'){ const v = (document.getElementById('a-key')?.value||'').trim(); if(v){ AD.key = v; AD.err = ''; try{ localStorage.setItem('study2-admin-key', v); }catch(_){} render(); aTick(); } return; }
+  if(S.hold && S.view!=='admin' && f!=='key') return;
   if(f==='chat'){ const v = (S.drafts.chat||'').trim(); if(v && !S.cutoff && !UI.typing) sendChat(v); }
   if(f==='room'){ const v = (S.drafts.room||'').trim(); if(v && !UI.ctyping) sendRoom(v); }
 });
