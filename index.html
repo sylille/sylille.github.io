@@ -386,7 +386,7 @@ input,select,textarea{font:inherit;color:inherit}
 const CONFIG = {
   // Remote admin. Paste the Apps Script web app URL (ends in /exec) to control this page from admin.html.
   // Leave empty to keep the single-browser mode, where the Admin button opens the console in the same tab.
-  syncUrl: 'https://script.google.com/macros/s/AKfycbxoFBbUd0b4Ae1-0wtyqZnwzociJglvIziB5vfF8M8B30w-KpwT6h1WovSs-U9eHlBb/exec',
+  syncUrl: 'https://script.google.com/macros/s/AKfycbwNzOxN-rLnl63jV2dFYMAg2g5jI24BDHI3R_64UCEB6EBFqG4tVXXAWpziVNcEpdsO/exec',
   // S4 resources. Replace with verified Korean services approved by the IRB.
   // Candidates to verify: 정신건강위기상담전화 1577-0199 (24h), 자살예방상담전화 109 (24h).
   resources: [
@@ -1260,8 +1260,11 @@ function applySel(k, v){
    ========================================================= */
 const REMOTE_ACTS = new Set(['persona','preset','tog','record','specs','simToggle','t15','tday','tweek','fireBlock','fireNotice','fireModel','reset','clearLog','sel']);
 async function post(body){
-  const r = await fetch(SYNC.url, {method:'POST', body:JSON.stringify(body)}); // text/plain, so no CORS preflight
-  return r.json();
+  const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), 12000); // a stuck request must not block later ticks
+  try{
+    const r = await fetch(SYNC.url, {method:'POST', body:JSON.stringify(body), signal:ctl.signal, cache:'no-store'}); // text/plain, so no CORS preflight
+    return await r.json();
+  }finally{ clearTimeout(timer); }
 }
 function snapshot(){
   return {pid:S.pid, part:S.part, persona:S.persona, lang:S.lang, preset:S.preset, s:S.s, record:S.record,
@@ -1385,6 +1388,7 @@ if(S.route==='community' && S.view!=='admin') startCommunity();
 render();
 if(RP){ pTick(); setInterval(pTick, 2000); }
 if(RA){ aTick(); setInterval(aTick, 2500); }
+document.addEventListener('visibilitychange', () => { if(document.visibilityState==='visible'){ if(RP) pTick(); if(RA) aTick(); } });
 </script>
 
 </body></html>
