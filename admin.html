@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex">
+<title>Study 2 Admin</title>
+<script>
+  // Opens the admin console of index.html for the same room, e.g. admin.html?room=lab
+  var q = location.search ? '&' + location.search.slice(1) : '';
+  location.replace('./?role=admin' + q);
+</script>
+</head>
+<body><a href="./?role=admin">Open the admin console</a></body>
+</html>
