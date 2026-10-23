@@ -386,12 +386,12 @@ input,select,textarea{font:inherit;color:inherit}
 const CONFIG = {
   // Remote admin. Paste the Apps Script web app URL (ends in /exec) to control this page from admin.html.
   // Leave empty to keep the single-browser mode, where the Admin button opens the console in the same tab.
-  syncUrl: '',
+  syncUrl: 'https://script.google.com/macros/s/AKfycbxoFBbUd0b4Ae1-0wtyqZnwzociJglvIziB5vfF8M8B30w-KpwT6h1WovSs-U9eHlBb/exec',
   // S4 resources. Replace with verified Korean services approved by the IRB.
   // Candidates to verify: 정신건강위기상담전화 1577-0199 (24h), 자살예방상담전화 109 (24h).
   resources: [
-    { name: ['[Verified Korean support line]', '[검증된 국내 상담 전화]'], detail: ['[Phone number · hours]', '[전화번호 · 운영 시간]'], kind: 'call' },
-    { name: ['[Verified counselling service]', '[검증된 상담 서비스]'], detail: ['[Website or chat link]', '[웹사이트 또는 채팅 링크]'], kind: 'open' }
+    { name: ['[Verified Korean support line]', '[검증된 국내 상담 전화]'], detail: ['[1577-0199 · 24 hours]', '[1577-0199 · 24시간]'], kind: 'call' },
+    { name: ['[Verified counselling service]', '[검증된 상담 서비스]'], detail: ['https://www.129.go.kr/109', 'https://www.129.go.kr/109'], kind: 'open' }
   ],
   taper: [90, 75, 60, 45],
   minutesPerMessage: 4,
